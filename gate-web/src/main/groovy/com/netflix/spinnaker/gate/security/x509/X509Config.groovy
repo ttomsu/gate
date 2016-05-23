@@ -33,13 +33,13 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
 import org.springframework.security.config.annotation.web.servlet.configuration.EnableWebMvcSecurity
 
-@ConditionalOnExpression('${spring.x509.enabled:false}')
+@ConditionalOnExpression('${x509.enabled:false}')
 @Configuration
 @SpinnakerAuthConfig
 @EnableWebMvcSecurity
 class X509Config {
 
-  @Value('${spring.x509.subjectPrincipalRegex:}')
+  @Value('${x509.subjectPrincipalRegex:}')
   String subjectPrincipalRegex
 
   @Autowired
