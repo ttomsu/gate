@@ -19,7 +19,7 @@ package com.netflix.spinnaker.gate.security.saml
 import com.netflix.spinnaker.gate.security.AuthConfig
 import com.netflix.spinnaker.gate.security.SpinnakerAuthConfig
 import com.netflix.spinnaker.gate.security.rolesprovider.UserRolesProvider
-import com.netflix.spinnaker.gate.services.AnonymousAccountsService
+import com.netflix.spinnaker.gate.services.AccountsService
 import com.netflix.spinnaker.gate.services.internal.ClouddriverService
 import com.netflix.spinnaker.security.User
 import groovy.util.logging.Slf4j
@@ -72,7 +72,6 @@ class SamlSsoConfig extends WebSecurityConfigurerAdapter {
     // The application identifier given to the IdP for this app.
     String issuerId
 
-    List<String> requiredRoles
     UserAttributeMapping userAttributeMapping = new UserAttributeMapping()
   }
 
@@ -136,7 +135,7 @@ class SamlSsoConfig extends WebSecurityConfigurerAdapter {
     new SAMLUserDetailsService() {
 
       @Autowired
-      AnonymousAccountsService anonymousAccountsService
+      AccountsService accountsService
 
       @Autowired
       ClouddriverService clouddriverService
@@ -157,24 +156,9 @@ class SamlSsoConfig extends WebSecurityConfigurerAdapter {
           firstName: attributes[userAttributeMapping.firstName]?.get(0),
           lastName: attributes[userAttributeMapping.lastName]?.get(0),
           roles: roles,
-          allowedAccounts: allowedAccounts(roles),
+          allowedAccounts: accountsService.getAllowedAccounts(roles),
           username: email) // TODO(ttomsu): assign username to email by default.
       }
-
-      Set<String> allowedAccounts(Set<String> roles) {
-        def allowedAccounts = (anonymousAccountsService.allowedAccounts ?: []) as Set<String>
-
-        clouddriverService.accounts.findAll {
-          it.requiredGroupMembership.find {
-            roles.contains(it.toLowerCase())
-          }
-        }.each {
-          allowedAccounts << it.name
-        }
-
-        return allowedAccounts
-      }
-
 
       Set<String> extractRoles(String email,
                                Map<String, List<String>> attributes,

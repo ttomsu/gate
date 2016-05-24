@@ -21,16 +21,28 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
-class AnonymousAccountsService {
+class AccountsService {
 
   private final ClouddriverService clouddriverService
 
   @Autowired
-  AnonymousAccountsService(ClouddriverService clouddriverService) {
+  AccountsService(ClouddriverService clouddriverService) {
     this.clouddriverService = clouddriverService
   }
 
-  public Collection<String> getAllowedAccounts() {
-    return clouddriverService.accounts.findAll { !it.requiredGroupMembership }*.name
+  /**
+   * Returns all account names that a user with the specified list of userRoles has access to.
+   */
+  public Collection<String> getAllowedAccounts(Collection<String> userRoles) {
+    return clouddriverService.accounts.findAll { ClouddriverService.Account account ->
+      if (!account.requiredGroupMembership) {
+        return true // anonymous account.
+      }
+
+      def userRolesLower = userRoles*.toLowerCase()
+      def reqGroupMembershipLower = account.requiredGroupMembership*.toLowerCase()
+
+      return userRolesLower.intersect(reqGroupMembershipLower) as Boolean
+    }*.name ?: []
   }
 }

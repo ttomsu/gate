@@ -19,7 +19,7 @@ package com.netflix.spinnaker.gate.security.oauth2
 import com.netflix.spinnaker.gate.security.AuthConfig
 import com.netflix.spinnaker.gate.security.SpinnakerAuthConfig
 import com.netflix.spinnaker.gate.security.rolesprovider.UserRolesProvider
-import com.netflix.spinnaker.gate.services.AnonymousAccountsService
+import com.netflix.spinnaker.gate.services.AccountsService
 import com.netflix.spinnaker.security.User
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
@@ -86,13 +86,13 @@ class OAuth2SsoConfig extends OAuth2SsoConfigurerAdapter {
     return new ResourceServerTokenServices() {
 
       @Autowired
-      private ResourceServerProperties sso;
+      ResourceServerProperties sso
 
       @Autowired
       UserInfoTokenServices userInfoTokenServices
 
       @Autowired
-      AnonymousAccountsService anonymousAccountsService
+      AccountsService accountsService
 
       @Autowired
       UserRolesProvider userRolesProvider
@@ -103,6 +103,7 @@ class OAuth2SsoConfig extends OAuth2SsoConfigurerAdapter {
 
         Map details = oAuth2Authentication.userAuthentication.details as Map
         def email = details.email ?: details.userPrincipalName
+        def roles = userRolesProvider.loadRoles(email)
 
         // TODO(ttomsu): Pull these values into config so that every OAuth provider doesn't need to specify how to
         // extract user details.
@@ -110,9 +111,9 @@ class OAuth2SsoConfig extends OAuth2SsoConfigurerAdapter {
             email: email,
             firstName: details.given_name ?: details.givenName,
             lastName: details.family_name ?: details.surname,
-            allowedAccounts: anonymousAccountsService.allowedAccounts,
-            roles: userRolesProvider.loadRoles(email),
-        )
+            allowedAccounts: accountsService.getAllowedAccounts(roles),
+            roles: roles,
+            )
 
         PreAuthenticatedAuthenticationToken authentication = new PreAuthenticatedAuthenticationToken(
             spinnakerUser,
