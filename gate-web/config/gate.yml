@@ -113,3 +113,18 @@ spring:
       clientAuthenticationScheme: query
     resource:
       userInfoUri: https://graph.windows.net/me?api-version=1.6
+
+---
+
+spring:
+  profiles: githubOAuth
+  oauth2:
+    client:
+      # Set these values in your own config file (e.g. spinnaker-local.yml or gate-githubOAuth.yml).
+      # clientId:
+      # clientSecret:
+      userAuthorizationUri: https://github.com/login/oauth/authorize
+      accessTokenUri: https://github.com/login/oauth/access_token
+      scope: user:email
+    resource:
+      userInfoUri: https://api.github.com/user
