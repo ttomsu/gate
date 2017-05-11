@@ -19,11 +19,12 @@ package com.netflix.spinnaker.gate.security.oauth2
 import com.netflix.spinnaker.gate.security.AuthConfig
 import com.netflix.spinnaker.gate.security.SpinnakerAuthConfig
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration
 import org.springframework.boot.autoconfigure.web.ServerProperties
 import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.cloud.security.oauth2.sso.EnableOAuth2Sso
+import org.springframework.cloud.security.oauth2.sso.OAuth2SsoConfiguration
 import org.springframework.cloud.security.oauth2.sso.OAuth2SsoConfigurer
 import org.springframework.cloud.security.oauth2.sso.OAuth2SsoConfigurerAdapter
 import org.springframework.cloud.security.oauth2.sso.OAuth2SsoProperties
@@ -34,9 +35,11 @@ import org.springframework.context.annotation.Primary
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.servlet.configuration.EnableWebMvcSecurity
 import org.springframework.security.core.AuthenticationException
+import org.springframework.security.oauth2.client.filter.OAuth2ClientAuthenticationProcessingFilter
 import org.springframework.security.oauth2.client.token.grant.code.AuthorizationCodeResourceDetails
 import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint
+import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler
 import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter
 import org.springframework.stereotype.Component
 
@@ -59,7 +62,7 @@ import javax.servlet.http.HttpServletResponse
 // Use @EnableWebSecurity if/when updated to Spring Security 4.
 @EnableWebMvcSecurity
 @Import(SecurityAutoConfiguration)
-@EnableOAuth2Sso
+//@EnableOAuth2Sso
 // Note the 4 single-quotes below - this is a raw groovy string, because SpEL and groovy
 // string syntax overlap!
 @ConditionalOnExpression(''''${spring.oauth2.client.clientId:}'!=""''')
@@ -146,6 +149,20 @@ class OAuth2SsoConfig {
     @Override
     protected String buildRedirectUrlToLoginPage(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) {
       return super.buildRedirectUrlToLoginPage(request, response, authException).replaceFirst("http", "https")
+    }
+  }
+
+  @Configuration
+  @ConditionalOnBean(OAuth2SsoConfig)
+  static class RedirectAwareOAuth2SsoConfiguration extends OAuth2SsoConfiguration {
+    @Override
+    protected OAuth2ClientAuthenticationProcessingFilter oauth2SsoFilter() {
+      def handler = new SavedRequestAwareAuthenticationSuccessHandler()
+      handler.setTargetUrlParameter("to")
+
+      def filter = super.oauth2SsoFilter()
+      filter.setAuthenticationSuccessHandler(handler)
+      return filter
     }
   }
 }
