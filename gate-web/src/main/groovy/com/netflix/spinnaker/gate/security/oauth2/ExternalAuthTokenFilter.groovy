@@ -51,11 +51,11 @@ class ExternalAuthTokenFilter implements Filter {
     def req = (HttpServletRequest) request
     if (!req.getContextPath().contains("health")) {
       def s = new StringBuilder("~~~ REQUEST! ~~~\n")
-          .append("Path: ${req.getContextPath()}\n")
+          .append("URI: ${req.getRequestURI()}\n")
           .append("Headers: \n")
       for (String name : req.getHeaderNames()) {
         for (String val : req.getHeaders(name)) {
-          s.append("$name: $val")
+          s.append("$name: $val\n")
         }
       }
       log.info(s.toString())
