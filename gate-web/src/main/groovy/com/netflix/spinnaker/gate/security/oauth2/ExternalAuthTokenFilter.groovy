@@ -47,6 +47,20 @@ class ExternalAuthTokenFilter implements Filter {
 
   @Override
   void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+
+    def req = (HttpServletRequest) request
+    if (!req.getContextPath().contains("health")) {
+      def s = new StringBuilder("~~~ REQUEST! ~~~\n")
+          .append("Path: ${req.getContextPath()}\n")
+          .append("Headers: \n")
+      for (String name : req.getHeaderNames()) {
+        for (String val : req.getHeaders(name)) {
+          s.append("$name: $val")
+        }
+      }
+      log.info(s.toString())
+    }
+
     def httpServletRequest = (HttpServletRequest) request
     Authentication auth = extractor.extract(httpServletRequest)
     if (auth?.principal) {
